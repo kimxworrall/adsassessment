@@ -186,8 +186,8 @@ def create_postcode_prices_data(conn):
 Now fill the databases with the existing data from the websites
 """
 
-import urllib.request
-import pandas as pd
+import urllib
+import pandas as pd
 import os
 
 def load_files_to_table(filename,conn,table):
