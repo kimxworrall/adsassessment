@@ -237,7 +237,7 @@ import datetime
 def load_price_paid_data_to_year(startyear,year,conn):
     for i in range(startyear,year-1):
         upload_ppd_by_year_2parts(i,conn)
-    if year ==  datetime.date.today.year: #the current year of paid price data is always just one file, as it is updated monthly
+    if year ==  datetime.date.today().year: #the current year of paid price data is always just one file, as it is updated monthly
         filename = f" http://prod.publicdata.landregistry.gov.uk.s3-website-eu-west-1.amazonaws.com/pp-{year}-part2.csv"
         urllib.request.urlretrieve(filename,f"pp_{year}_p2.csv")
         load_files_to_table(f"pp_{year}.csv",conn,"pp_data")
