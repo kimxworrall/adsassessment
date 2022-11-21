@@ -97,6 +97,8 @@ def create_ppd_table(conn):
     cur.execute(
         """
         DROP TABLE IF EXISTS `pp_data`;
+        """)
+    cur.execute("""
         CREATE TABLE IF NOT EXISTS `pp_data` (
             `transaction_unique_identifier` tinytext COLLATE utf8_bin NOT NULL,
             `price` int(10) unsigned NOT NULL,
@@ -141,7 +143,11 @@ def create_postcode_data_table(conn):
     '''
     cur.execute(
         """
-    DROP TABLE IF EXISTS `postcode_data`;
+            DROP TABLE IF EXISTS `postcode_data`;
+        """
+    )
+    cur.execute(
+        """
     CREATE TABLE IF NOT EXISTS `postcode_data` (
         `postcode` varchar(8) COLLATE utf8_bin NOT NULL,
         `status` enum('live','terminated') NOT NULL,
