@@ -238,8 +238,8 @@ def load_price_paid_data_to_year(startyear,year,conn):
     for i in range(startyear,year-1):
         upload_ppd_by_year_2parts(i,conn)
     if year ==  datetime.date.today().year: #the current year of paid price data is always just one file, as it is updated monthly
-        filename = f" http://prod.publicdata.landregistry.gov.uk.s3-website-eu-west-1.amazonaws.com/pp-{year}-part2.csv"
-        urllib.request.urlretrieve(filename,f"pp_{year}_p2.csv")
+        filename = f" http://prod.publicdata.landregistry.gov.uk.s3-website-eu-west-1.amazonaws.com/pp-{year}.csv"
+        urllib.request.urlretrieve(filename,f"pp_{year}.csv")
         load_files_to_table(f"pp_{year}.csv",conn,"pp_data")
         os.remove(f"pp_{year}.csv") 
     else:
@@ -248,7 +248,9 @@ def load_price_paid_data_to_year(startyear,year,conn):
 import zipfile
 
 def load_postcode_data(conn):
-    admin_zones_url = 'https://data.humdata.org/dataset/81ac1d38-f603-4a98-804d-325c658599a3/resource/0bc2f7bb-9ff6-40db-a569-1989b8ffd3bc/download/nga_admbnda_osgof_eha_itos.gdb.zip'
-    _,msg=urllib.request.urlretrieve(admin_zones_url,'nga_admbnda_osgof_eha_itos.gdb.zip')
-    with zipfile.ZipFile('/content/nga_admbnda_osgof_eha_itos.gdb.zip','r') as zip_ref:
-        zip_ref.extractall('/content/nga_admbnda_osgof_eha_itos.gdb')
+    postcode_data_url = ' https://www.getthedata.com/downloads/open_postcode_geo.csv.zip'
+    _,msg=urllib.request.urlretrieve(postcode_data_url,'open_postcode_geo.csv.zip')
+    with zipfile.ZipFile('/content/open_postcode_geo.csv.zip','r') as zip_ref:
+        zip_ref.extractall('/content/nopen_postcode_geo.csv.zip')
+    load_files_to_table("open_postcode_geo.csv",conn,"postcode_data")
+    
