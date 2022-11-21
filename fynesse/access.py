@@ -131,6 +131,16 @@ def create_ppd_table(conn):
         MODIFY `db_id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=1;
         """
     )
+    cur.execute("""
+    CREATE INDEX `pp.postcode` USING HASH
+        ON `pp_data`
+            (postcode);
+        """)
+    cur.execute("""
+    CREATE INDEX `pp.date` USING HASH
+        ON `pp_data` 
+            (date_of_transfer);
+        """)
     conn.commit()
     print("Paid price data table created with table name `pp_data`")
     
@@ -167,8 +177,7 @@ def create_postcode_data_table(conn):
         `outcode` varchar(4) COLLATE utf8_bin NOT NULL,
         `incode` varchar(3)  COLLATE utf8_bin NOT NULL,
         `db_id` bigint(20) unsigned NOT NULL
-    ) DEFAULT CHARSET=utf8 COLLATE=utf8_bin 
-    ALT CHARSET=utf8 COLLATE=utf8_bin AUTO_INCREMENT=1 ;
+    ) DEFAULT CHARSET=utf8 COLLATE=utf8_bin AUTO_INCREMENT=1 ;
         """
     )
     cur.execute(
@@ -181,6 +190,13 @@ def create_postcode_data_table(conn):
         """
         ALTER TABLE `postcode_data`
         MODIFY `db_id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=1;
+        """
+    )
+    cur.execute(
+        """
+        CREATE INDEX `po.postcode` USING HASH
+            ON `postcode_data`
+                (postcode);
         """
     )
     conn.commit()
@@ -218,8 +234,8 @@ def upload_ppd_by_year_2parts(year,conn):
 
 import datetime
 
-def load_price_paid_data_to_year(year,conn):
-    for i in range(1995,year-1):
+def load_price_paid_data_to_year(startyear,year,conn):
+    for i in range(startyear,year-1):
         upload_ppd_by_year_2parts(i,conn)
     if year ==  datetime.date.today.year: #the current year of paid price data is always just one file, as it is updated monthly
         filename = f" http://prod.publicdata.landregistry.gov.uk.s3-website-eu-west-1.amazonaws.com/pp-{year}-part2.csv"
