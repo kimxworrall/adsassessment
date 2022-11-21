@@ -167,7 +167,8 @@ def create_postcode_data_table(conn):
         `outcode` varchar(4) COLLATE utf8_bin NOT NULL,
         `incode` varchar(3)  COLLATE utf8_bin NOT NULL,
         `db_id` bigint(20) unsigned NOT NULL
-    ) DEFAULT CHARSET=utf8 COLLATE=utf8_bin;ALT CHARSET=utf8 COLLATE=utf8_bin AUTO_INCREMENT=1 ;
+    ) DEFAULT CHARSET=utf8 COLLATE=utf8_bin 
+    ALT CHARSET=utf8 COLLATE=utf8_bin AUTO_INCREMENT=1 ;
         """
     )
     cur.execute(
@@ -212,8 +213,8 @@ def upload_ppd_by_year_2parts(year,conn):
   os.remove(f"pp_{year}_p1.csv") 
   filename = f" http://prod.publicdata.landregistry.gov.uk.s3-website-eu-west-1.amazonaws.com/pp-{year}-part2.csv"
   urllib.request.urlretrieve(filename,f"pp_{year}_p2.csv")
-  load_files_to_table(f"pp_{year}_p2.csv")
-  os.remove(f"pp_{year}_p2.csv",conn,"pp_data") 
+  load_files_to_table(f"pp_{year}_p2.csv",conn,"pp_data")
+  os.remove(f"pp_{year}_p2.csv") 
 
 import datetime
 
@@ -223,8 +224,8 @@ def load_price_paid_data_to_year(year,conn):
     if year ==  datetime.date.today.year: #the current year of paid price data is always just one file, as it is updated monthly
         filename = f" http://prod.publicdata.landregistry.gov.uk.s3-website-eu-west-1.amazonaws.com/pp-{year}-part2.csv"
         urllib.request.urlretrieve(filename,f"pp_{year}_p2.csv")
-        load_files_to_table(f"pp_{year}.csv")
-        os.remove(f"pp_{year}.csv",conn,"pp_data") 
+        load_files_to_table(f"pp_{year}.csv",conn,"pp_data")
+        os.remove(f"pp_{year}.csv") 
     else:
         upload_ppd_by_year_2parts(year,conn)
 
