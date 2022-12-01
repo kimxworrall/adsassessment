@@ -7,6 +7,10 @@ import tables
 import mongodb
 import sqlite"""
 
+import urllib
+import os
+
+
 # This file accesses the data
 
 """Place commands in this file to access the data electronically. Don't remove any missing values, or deal with outliers. Make sure you have legalities correct, both intellectual property and personal data privacy rights. Beyond the legal side also think about the ethical issues around this data. """
@@ -91,6 +95,11 @@ One thing to consider is that postcodes do not necessarily align with other geog
 
 Task D joins the two tables created by joining them into a table where paid price data matches to the approximate latitude and longitude of the property.
 '''
+
+def create_ukppd_database(conn):
+    cur = conn.cursor()
+    cur.execute("CREATE DATABASE IF NOT EXISTS `uk_ppd` DEFAULT CHARACTER SET utf8 COLLATE utf8_bin;")
+    conn.commit()
 
 def create_ppd_table(conn):
     cur = conn.cursor()
@@ -220,7 +229,7 @@ def load_files_to_table(filename,conn,table):
     OPTIONALLY ENCLOSED BY '"'
     LINES STARTING BY '' TERMINATED BY '\n';""")
     conn.commit()
-    print(filename)
+    print("uploaded" + filename + "to" + table)
 
 def upload_ppd_by_year_2parts(year,conn):
   filename = f" http://prod.publicdata.landregistry.gov.uk.s3-website-eu-west-1.amazonaws.com/pp-{year}-part1.csv"
@@ -246,11 +255,95 @@ def load_price_paid_data_to_year(startyear,year,conn):
         upload_ppd_by_year_2parts(year,conn)
 
 import zipfile
+import requests
+from io import BytesIO
 
 def load_postcode_data(conn):
     postcode_data_url = ' https://www.getthedata.com/downloads/open_postcode_geo.csv.zip'
-    _,msg=urllib.request.urlretrieve(postcode_data_url,'open_postcode_geo.csv.zip')
-    with zipfile.ZipFile('/content/open_postcode_geo.csv.zip','r') as zip_ref:
-        zip_ref.extractall('/content/nopen_postcode_geo.csv.zip')
-    load_files_to_table("open_postcode_geo.csv",conn,"postcode_data")
-    
+    #_,msg=urllib.request.urlretrieve(postcode_data_url,'open_postcode_geo.csv.zip')
+    req = requests.get(postcode_data_url)
+    with zipfile.ZipFile(BytesIO(req.content)) as zip_ref:
+        zip_ref.extractall('/content/open_postcode_geo.csv')
+    load_files_to_table("/content/open_postcode_geo.csv/open_postcode_geo.csv",conn,"postcode_data")
+   
+def create_prices_coordinates_data_table(conn):
+  cur = conn.cursor()
+  cur.execute("DROP TABLE IF EXISTS `prices_coordinates_data`;")
+  cur.execute("""
+    CREATE TABLE IF NOT EXISTS `prices_coordinates_data` (
+      `price` int(10) unsigned NOT NULL,
+      `date_of_transfer` date NOT NULL,
+      `postcode` varchar(8) COLLATE utf8_bin NOT NULL,
+      `property_type` varchar(1) COLLATE utf8_bin NOT NULL,
+      `new_build_flag` varchar(1) COLLATE utf8_bin NOT NULL,
+      `tenure_type` varchar(1) COLLATE utf8_bin NOT NULL,
+      `primary_addressable_object_name` tinytext COLLATE utf8_bin NOT NULL,
+      `street` tinytext COLLATE utf8_bin NOT NULL,
+      `locality` tinytext COLLATE utf8_bin NOT NULL,
+      `town_city` tinytext COLLATE utf8_bin NOT NULL,
+      `district` tinytext COLLATE utf8_bin NOT NULL,
+      `county` tinytext COLLATE utf8_bin NOT NULL,
+      `country` enum('England', 'Wales', 'Scotland', 'Northern Ireland', 'Channel Islands', 'Isle of Man') NOT NULL,
+      `lattitude` decimal(11,8) NOT NULL,
+      `longitude` decimal(10,8) NOT NULL,
+      `db_id` bigint(20) unsigned NOT NULL
+    ) DEFAULT CHARSET=utf8 COLLATE=utf8_bin AUTO_INCREMENT=1;
+  """)
+  conn.commit()
+
+  def join_ppd_pcd(conn):
+    """
+    Find postcode data for each sale, join results adding latitude and longitude to the sale
+    """
+
+    cur = conn.cursor()
+    cur.execute("""
+                INSERT INTO prices_coordinates_data
+                SELECT ft.price, ft.date_of_transfer, ct.postcode, ft.property_type, ft.new_build_flag, ft.tenure_type, ft.primary_addressable_object_name, ft.street, ft.locality, ft.town_city, ft.district, ft.county, ct.country, ct.lattitude, ct.longitude, ft.db_id
+                FROM
+                    (SELECT `postcode`,`db_id`,`price`, `date_of_transfer`, `property_type`,`new_build_flag`, `tenure_type`,`primary_addressable_object_name`, `street`, `locality`, `town_city`, `district`, `county`   FROM pp_data) ft
+                INNER JOIN 
+                    (SELECT `postcode`, `lattitude`, `longitude`, `country` FROM postcode_data ) ct
+                ON
+                    ft.`postcode` = ct.`postcode`
+                """)
+    conn.commit()
+
+
+def join_ppd_pcd_select(conn):
+    """
+    Find postcode data for each sale, join results
+    """
+
+    cur = conn.cursor()
+    cur.execute("""
+                SELECT ft.price, ft.date_of_transfer, ct.postcode, ft.property_type, ft.new_build_flag, ft.tenure_type, ft.primary_addressable_object_name, ft.street, ft.locality, ft.town_city, ft.district, ft.county, ct.country, ct.lattitude, ct.longitude, ft.db_id
+                FROM
+                    (SELECT `postcode`,`db_id`,`price`, `date_of_transfer`, `property_type`,`new_build_flag`, `tenure_type`,`primary_addressable_object_name`, `street`, `locality`, `town_city`, `district`, `county`   FROM pp_data) ft
+                INNER JOIN 
+                    (SELECT `postcode`, `lattitude`, `longitude`, `country` FROM postcode_data ) ct
+                ON
+                    ft.`postcode` = ct.`postcode`
+                LIMIT 5;
+                """)
+    rows = cur.fetchall()
+
+def join_ppd_pcd_indaterange(conn,date_range):
+    """
+    Find postcode data for each sale, join results adding latitude and longitude to the sale
+    """
+
+    cur = conn.cursor()
+    cur.execute(f"""
+                INSERT INTO prices_coordinates_data
+                SELECT ft.price, ft.date_of_transfer, ct.postcode, ft.property_type, ft.new_build_flag, ft.tenure_type, ft.primary_addressable_object_name, ft.street, ft.locality, ft.town_city, ft.district, ft.county, ct.country, ct.lattitude, ct.longitude, ft.db_id
+                FROM
+                    (SELECT `postcode`,`db_id`,`price`, `date_of_transfer`, `property_type`,`new_build_flag`, `tenure_type`,`primary_addressable_object_name`, `street`, `locality`, `town_city`, `district`, `county`   FROM pp_data) ft
+                INNER JOIN 
+                    (SELECT `postcode`, `lattitude`, `longitude`, `country` FROM postcode_data ) ct
+                ON
+                    ft.`postcode` = ct.`postcode`
+                WHERE
+                    ft.date_of_transfer BETWEEN '{date_range[0]}' AND '{date_range[1]}';
+                """)
+    conn.commit()

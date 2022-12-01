@@ -9,6 +9,7 @@ This file contains some useful sql query functions for the database
 
 3. 
 """
+import pandas as pd
 
 def show_all_years(conn):
     cur = conn.cursor()
@@ -41,3 +42,28 @@ def select_from_pricecoordinatedata_by_place_and_year(place, placetype,year, con
         cur.execute(f"""SELECT * FROM prices_coordinates_data WHERE (date_of_transfer BETWEEN '{year}-01-01' AND '{year}-12-31') AND county = {place}""")
     else:
         return NotImplementedError
+
+
+def get_prices_by_property_type(type,conn):
+    cur = conn.cursor()
+    cur.execute(f"SELECT price FROM prices_coordinates_data WHERE property_type = '{type}' ;")
+    rows = cur.fetchall()
+    return [i[0] for i in rows]
+
+def get_unique_values_of_column_from_table(column,table):
+    rows = pd.read_sql(f"SELECT DISTINCT {column} FROM {table};",con = conn)
+    return list(rows[column])
+
+
+
+def get_features_by_property_type_by_district(features,year,groupby,conn):
+    fselect = ', '.join(features)
+    cur = conn.cursor()
+    rows = pd.read_sql(f"SELECT {groupby}, {fselect}, district FROM prices_coordinates_data WHERE date_of_transfer BETWEEN '{year}-01-01' AND '{year}-12-31' GROUP BY {groupby}, district;",con = conn)
+    return rows
+
+
+def get_keys(conn,table):
+  cur = conn.cursor()
+  cur.execute(f"SHOW COLUMNS FROM {table};")
+  return [i[0] for i in cur.fetchall()]
