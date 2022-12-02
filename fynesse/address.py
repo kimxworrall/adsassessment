@@ -17,7 +17,7 @@ import shapely
 import math
 from geopandas import GeoSeries
 import numpy as np
-from input_validation import *
+from .input_validation import *
 """Address a particular question that arises from the data"""
 
 def validate_inputs(latitude, longitude, date, property_type,conn):
