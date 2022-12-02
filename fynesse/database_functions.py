@@ -67,3 +67,10 @@ def get_keys(conn,table):
   cur = conn.cursor()
   cur.execute(f"SHOW COLUMNS FROM {table};")
   return [i[0] for i in cur.fetchall()]
+
+def get_lat_long_from_postcode(postcode,conn):
+  cur = conn.cursor()
+  cur.execute(f"SELECT lattitude, longitude FROM postcode_data WHERE postcode = '{postcode}';")
+  loc = cur.fetchall()[0]
+  return loc
+
