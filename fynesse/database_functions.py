@@ -10,6 +10,7 @@ This file contains some useful sql query functions for the database
 3. 
 """
 import pandas as pd
+import numpy as np
 
 def show_all_years(conn):
     cur = conn.cursor()

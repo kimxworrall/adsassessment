@@ -3,6 +3,7 @@ from shapely.geometry import Point
 import geopandas
 from global_land_mask import globe
 import datetime
+import numpy as np
 def check_nearby_postcode(latitude,longitude,conn):
   '''
     This function is to check if there is a postcode within an aproximately 10km radius of the given point
