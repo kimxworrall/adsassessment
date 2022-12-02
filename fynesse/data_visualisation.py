@@ -345,3 +345,10 @@ def profile_osmdata(latitude,longitude,radius):
   display(pois['landuse'].unique())
   if ("farmland" in list(pois['landuse'])):
     print("This area contains a lot of farmland, it is possible there aren't many houses here")
+
+def plot_houses__radius(latitude,longitude,radius,conn):
+  houses = select_houses_in_radius_around_point(latitude,longitude,radius,conn)
+  fig,ax = plt.subplots(figsize=plot.big_figsize)
+  plot_map(latitude,longitude,radius,ax)
+  #pois.plot(ax=ax, color="blue", alpha=0.7, markersize=10)
+  plot_houses(houses,ax,fig)

@@ -76,7 +76,7 @@ def create_database_connection(databaselocation):
     conn = create_connection(user=credentials["username"], 
                          password=credentials["password"], 
                          host=database_details["url"],
-                         database="uk_ppd")
+                         database="property_prices")
     return conn
 
 '''
@@ -98,7 +98,7 @@ Task D joins the two tables created by joining them into a table where paid pric
 
 def create_ukppd_database(conn):
     cur = conn.cursor()
-    cur.execute("CREATE DATABASE IF NOT EXISTS `uk_ppd` DEFAULT CHARACTER SET utf8 COLLATE utf8_bin;")
+    cur.execute("CREATE DATABASE IF NOT EXISTS `property_prices` DEFAULT CHARACTER SET utf8 COLLATE utf8_bin;")
     conn.commit()
 
 def create_ppd_table(conn):

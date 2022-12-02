@@ -68,27 +68,27 @@ def validate_training_data(data,latitude,longitude,radius,ptype):
   
   return df
 
+'''
+Below are the four functions for getting the training parameters from the data, they could easily be added to or edited if necessart
+'''
+
 def get_avg_prices_in_radius_df(df,radius):
-  #print(df['price'].index)
   avgs = [np.mean(df[sqrt(pow(abs(df.lattitude - df['lattitude'][i]),2) + pow(abs(df.longitude - df['longitude'][i]),2)) < radius ]['price']) for i in df['price'].index]
-  #print(avgs)
   return avgs
 
 def get_avg_prices_propertytype_in_radius_df(df,radius):
   avgs = [np.mean(df[df['property_type']==df['property_type'][i]][sqrt(pow(abs(df[df['property_type']==df['property_type'][i]]['lattitude'] - df['lattitude'][i]),2) + pow(abs(df[df['property_type']==df['property_type'][i]].longitude - df['longitude'][i]),2)) < radius ]['price']) for i in df['price'].index]
-  #print(avgs)
   return avgs
 
 def get_avg_prices_newbuild_in_radius_df(df,radius):
   avgs = [np.mean(df[df['new_build_flag']==df['new_build_flag'][i]][sqrt(pow(abs(df[df['new_build_flag']==df['new_build_flag'][i]]['lattitude'] - df['lattitude'][i]),2) + pow(abs(df[df['new_build_flag']==df['new_build_flag'][i]].longitude - df['longitude'][i]),2)) < radius ]['price']) for i in df['price'].index]
-  #print(avgs)
   return avgs
 
 def get_sizeIn_radius(houses,pois,radius):
   avgs = [np.mean(pois[pois.geometry.distance(Point(houses['lattitude'][i],houses['longitude'][i])) < radius]['size']) for i in houses['price'].index]
   return avgs  
 
-def make_proper_training_data(df,latitude,longitude):
+def make_proper_training_data(df,latitude,longitude,conn):
   
   newdf = df[['lattitude','longitude']]
   newdf['mean_close_price'] = get_avg_prices_in_radius_df(df,0.005)
