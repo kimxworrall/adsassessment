@@ -1,5 +1,5 @@
 from . import database_functions
-from database_functions import get_prices_by_property_type, get_unique_values_of_column_from_table, get_features_by_property_type_by_district, get_lat_long_from_postcode
+from .database_functions import *#get_prices_by_property_type, get_unique_values_of_column_from_table, get_features_by_property_type_by_district, get_lat_long_from_postcode
 import matplotlib.pyplot as plt
 import numpy as np
 import mlai.plot as plot
