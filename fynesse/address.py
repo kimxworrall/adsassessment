@@ -116,7 +116,7 @@ def predict_price(latitude,longitude,date,property_type,conn):
     if validate_inputs(latitude, longitude, date, property_type,conn):
       data = get_training_pricesdata(latitude,longitude,date,0.01,conn)
       data = validate_training_data(data,latitude,longitude,0.01,property_type)
-      params = make_proper_training_data(data,latitude,longitude)
+      params = make_proper_training_data(data,latitude,longitude,conn)
       params = params.fillna(0)
       design = params.to_numpy()
       Y = data['price'].to_numpy()
