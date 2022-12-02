@@ -21,21 +21,20 @@ import mlai
 from mlai import plot
 import geopandas as gpd
 import osmnx as ox
+from scipy.stats.morestats import sqrt
 
 def plotlines_together_and_seperately(lines,x_label,y_label,graphname, labels):
-    # plotting
+  #This functions plots lines both all on the same graph, and on one graph each
   numdown = math.ceil(math.sqrt((len(lines)+1)))
   numacross = math.ceil(len(lines)/numdown)
   fig, axes = plt.subplots(
     nrows=numdown, ncols=numacross, sharex=True, sharey=True, figsize = (20,20)
   )
-  #fig.xlabel(x)
-  #fig.ylabel(y)
+
   fig.suptitle(graphname)
   
   for l in range(len(lines)):
     y = np.sort(lines[l])
-    # get the cdf values of y
     x = np.arange(len(lines[l]))
     axes[0,0].plot(x,y,marker='o', markersize = 5, label =labels[l])
     axes[math.floor((l+1)/numacross),((l+1)%numacross)].plot(x,y,marker='o', markersize = 5, label =labels[l])
@@ -53,6 +52,7 @@ def plotlines_together_and_seperately(lines,x_label,y_label,graphname, labels):
   plt.show()
 
 def plot_graphs_subplots(graphs,linelabels,x_label,y_label,graphname, labels):
+  #This function takes a number of graphs and plots them in a rectangle
   numdown = math.ceil(math.sqrt((len(graphs))))
   numacross = math.ceil(len(graphs)/numdown)
   fig, axes = plt.subplots(
@@ -70,7 +70,7 @@ def plot_graphs_subplots(graphs,linelabels,x_label,y_label,graphname, labels):
   plt.show()
 
 def plotlines_on_ax(lines, labels,ax):
-    # plotting
+    # This function plots a set of sets of points on a given axis
     for l in range(len(lines)):
       y = np.sort(lines[l])
       # get the cdf values of y
@@ -79,6 +79,7 @@ def plotlines_on_ax(lines, labels,ax):
     ax.legend()
 
 def plot_cdfs_by_propertytype_locations(place,names,conn):
+  #This function plots the functions comparing what fraction of properties have sold for which price for each place name
   propertytypes = get_unique_values_of_column_from_table("property_type","prices_coordinates_data",conn)
   allprices = [[get_prices_by_property_type_location(t,place,n,conn) for t in propertytypes] for n in names]
   print(len(allprices))
@@ -86,17 +87,20 @@ def plot_cdfs_by_propertytype_locations(place,names,conn):
 
 
 def plot_cdfs_by_propertytype(conn):
+  #This function just plots cdfs per property type for all of the data in prices_coordinates_data
   propertytypes = get_unique_values_of_column_from_table("property_type","prices_coordinates_data",conn)
   allprices = [get_prices_by_property_type(t,conn) for t in propertytypes]
   plotlines_together_and_seperately(allprices,"Number of houses sold less than that price","Price £", "CDF of prices by property type", propertytypes)
 
-def fetch_uk_counties_geojson():
+def fetch_uk_district_geojson():
+  #This line fetches the districts geojson
   with urlopen('https://raw.githubusercontent.com/thomasvalentine/Choropleth/main/Local_Authority_Districts_(December_2021)_GB_BFC.json') as response:
     Local_authorities = json.load(response)
     return Local_authorities
 
 def plot_district_withdata(data):
-  Local_authorities = fetch_uk_counties_geojson()
+  #This function plots an interactive map using the dataframe provided of local_authorities and values for them
+  Local_authorities = fetch_uk_district_geojson()
   la_data = []
   # Iterative over JSON
   for i in range(len(Local_authorities["features"])):
@@ -107,7 +111,9 @@ def plot_district_withdata(data):
       # append local authority name to a list with the item of data to plot
       if "," in la:
         a = la.split(', ')
-        if (a[1] == "County of"):
+        if (a[1] == "County of"): #This is to match discrepencies in how the districts are listed in the different data sources
+          f = data.get((a[0]).upper(),0)
+        elif ((a[1] == "City of") and (a[0] == "Westiminster")):
           f = data.get((a[0]).upper(),0)
         else:
           f = data.get((a[1]+" "+a[0]).upper(),0)
@@ -136,7 +142,7 @@ def plot_district_withdata(data):
   fig.show()
 
 def filter_and_plotdistricts(dataframe,groupby, column=None, item="all"):
-    """This helper function displays a DataFrame, filtering a given column on a particular item"""
+    """This helper function plots the DataFrame, filtering a given column on a particular item"""
     if column is None:
         column = dataframe.columns[0]
     if item=="all": 
@@ -144,7 +150,7 @@ def filter_and_plotdistricts(dataframe,groupby, column=None, item="all"):
     plot_district_withdata((dict(zip(dataframe[dataframe[groupby]==item]["district"],dataframe[dataframe[groupby]==item][column]))))
 
 def plot_counties_features_groupby(year, groupby,conn,features= ['AVG(price) as average_price', 'COUNT(db_id) as num_sold', 'MAX(price) as Maxprice', 'MIN(price) as Minprice', 'MAX(price) - MIN(price) as pricerange']):
-  #print(get_keys(conn,'pp_data'))
+  #This function produces the interacts that help the user choose different features of the data to look at
   data_interact = get_features_by_property_type_by_district(features, year, groupby,conn)
   
   column = groupby
@@ -168,7 +174,6 @@ def get_bounding_box(latitude,longitude,radius):
 def get_points_of_interest(latitude,longitude,radius,tags): #Please enter tags in dictionary form with {tag_name:True/False/'value',....}
   pois = ox.geometries_from_bbox(latitude+radius, latitude-radius, longitude+radius, longitude-radius, tags)
   return pois
-
 
 def plot_pois(pois,ax):
   pois.plot(ax=ax, color="blue", alpha=0.7, markersize=10)
@@ -324,3 +329,19 @@ def plot_price_to_sizeIn_radius(latitude,longitude,radius,conn):
     #print( max(close_pois_avg,0),houses['price'][i])
     if (close_pois_avg != np.NaN and close_pois_avg < radius):
       ax.scatter(x = max(close_pois_avg,0), y = houses['price'][i], marker =markeroptions[houses['property_type'][i]], color = colours[houses['property_type'][i]])
+
+def profile_osmdata(latitude,longitude,radius):
+  tag="building"
+  keys= ['residential','semidetached_house','apartments','house','detached','terrace']
+  tags = {"building": 'residential',"building":'semidetached_house',"building":'apartments',"building":'house',"building":'detached',"building":'terrace', "building":True, "landuse":True, }
+  pois = ox.geometries_from_bbox(latitude+radius, latitude-radius, longitude+radius, longitude-radius, tags)
+  #pois = (pois[pois.building.isin(keys)])
+  
+  if ("residential" in list(pois['building'])):
+    print("There are this many residential buildings in this area:")
+    print(len(pois[pois['building']=="residential"]))
+    print("Maybe try a larger bounding box")
+  print("This is the landuses of this area:")
+  display(pois['landuse'].unique())
+  if ("farmland" in list(pois['landuse'])):
+    print("This area contains a lot of farmland, it is possible there aren't many houses here")

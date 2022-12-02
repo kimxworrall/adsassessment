@@ -19,6 +19,7 @@ from geopandas import GeoSeries
 import numpy as np
 import pandas as pd
 from .input_validation import *
+from .data_visualisation import *
 """Address a particular question that arises from the data"""
 
 def validate_inputs(latitude, longitude, date, property_type,conn):
@@ -54,13 +55,14 @@ def get_training_pricesdata(latitude,longitude,date,radius,conn):
                         ;""",con = conn)
   return rows
 
-def validate_training_data(data):
+def validate_training_data(data,latitude,longitude,radius):
   #Given a dataframe of prices data, remove datapoints where the price might be anomalous, and look at how many datapoints there are, if we dont have many, let the user know
   df = clean_prices_dataframe(data)
   if len(df['price'])<100:
     print("Not many houses were sold in this area, we only found "+str(len(df['price'])) +", this data might not be very accurate")
   if len(df['price']) == 0:
     print("We've found no houses near here, checking osmnx data")
+    profile_osmdata(latitude,longitude,radius)
   
   return df
 
@@ -79,11 +81,6 @@ def get_avg_prices_newbuild_in_radius_df(df,radius):
   avgs = [np.mean(df[df['new_build_flag']==df['new_build_flag'][i]][sqrt(pow(abs(df[df['new_build_flag']==df['new_build_flag'][i]]['lattitude'] - df['lattitude'][i]),2) + pow(abs(df[df['new_build_flag']==df['new_build_flag'][i]].longitude - df['longitude'][i]),2)) < radius ]['price']) for i in df['price'].index]
   #print(avgs)
   return avgs
-
-'''def get_avg_prices_propertytype_in_radius_df_distance_weighted(df,radius):
-  avgs = [np.mean(df[sqrt(pow(abs(df.lattitude - df['lattitude'][i]),2) + pow(abs(df.longitude - df['longitude'][i]),2)) < radius ]['price']) for i in range(len(df['price']))]
-  return avgs
-'''
 
 def get_sizeIn_radius(houses,pois,radius):
   avgs = [np.mean(pois[pois.geometry.distance(Point(houses['lattitude'][i],houses['longitude'][i])) < radius]['size']) for i in houses['price'].index]
