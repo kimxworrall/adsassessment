@@ -55,7 +55,7 @@ def get_training_pricesdata(latitude,longitude,date,radius,conn):
                         ;""",con = conn)
   return rows
 
-def validate_training_data(data,latitude,longitude,radius):
+def validate_training_data(data,latitude,longitude,radius,ptype):
   #Given a dataframe of prices data, remove datapoints where the price might be anomalous, and look at how many datapoints there are, if we dont have many, let the user know
   df = clean_prices_dataframe(data)
   if len(df['price'])<100:
@@ -63,6 +63,8 @@ def validate_training_data(data,latitude,longitude,radius):
   if len(df['price']) == 0:
     print("We've found no houses near here, checking osmnx data")
     profile_osmdata(latitude,longitude,radius)
+  if len(df[df['property_type']==ptype]) < 20:
+    print("There aren't many properties of that type near here, this prediction may not be accurate")
   
   return df
 
@@ -112,8 +114,8 @@ def validate_prediction(p):
 def predict_price(latitude,longitude,date,property_type,conn):
     """Price prediction for UK housing."""
     if validate_inputs(latitude, longitude, date, property_type,conn):
-      data = get_training_pricesdata(latitude,longitude,date,0.02,conn)
-      data = validate_training_data(data)
+      data = get_training_pricesdata(latitude,longitude,date,0.01,conn)
+      data = validate_training_data(data,latitude,longitude,0.01,property_type)
       params = make_proper_training_data(data,latitude,longitude)
       params = params.fillna(0)
       design = params.to_numpy()
@@ -128,7 +130,7 @@ def predict_price(latitude,longitude,date,property_type,conn):
       print(prediction)
       print("This is the variance of our model "+ str(results_basis.scale))
       print("Standard deviation = " + str(math.sqrt(results_basis.scale)))
-      print()
-      print("These are the prediction parameters "+str(y_pred_linear_basis))
+      print("These are the prediction parameters ")
+      print(str(y_pred_linear_basis))
       validate_prediction(prediction)
     pass
