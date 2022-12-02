@@ -77,9 +77,9 @@ def plotlines_on_ax(lines, labels,ax):
       ax.plot(x,y,marker='o', markersize = 5, label =labels[l])
     ax.legend()
 
-def plot_cdfs_by_propertytype_locations(place,names):
+def plot_cdfs_by_propertytype_locations(place,names,conn):
   propertytypes = get_unique_values_of_column_from_table("property_type","prices_coordinates_data")
-  allprices = [[get_prices_by_property_type_location(t,place,n) for t in propertytypes] for n in names]
+  allprices = [[get_prices_by_property_type_location(t,place,n,conn) for t in propertytypes] for n in names]
   print(len(allprices))
   plot_graphs_subplots(allprices,propertytypes,"Fraction of houses sold for less than that price","Price £", "CDF of prices by property type", names)
 

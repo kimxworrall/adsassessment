@@ -74,7 +74,7 @@ def get_lat_long_from_postcode(postcode,conn):
   loc = cur.fetchall()[0]
   return loc
 
-def get_prices_by_property_type_location(type,place,c,conn=conn):
+def get_prices_by_property_type_location(type,place,c,conn):
     cur = conn.cursor()
     cur.execute(f"SELECT price FROM prices_coordinates_data WHERE property_type = '{type}' AND {place} = '{c}' ;")
     rows = cur.fetchall()
