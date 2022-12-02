@@ -20,6 +20,7 @@ import proplot as pplt
 import mlai
 from mlai import plot
 import geopandas as gpd
+import osmnx as ox
 
 def plotlines_together_and_seperately(lines,x_label,y_label,graphname, labels):
     # plotting
@@ -55,7 +56,7 @@ def plot_graphs_subplots(graphs,linelabels,x_label,y_label,graphname, labels):
   numdown = math.ceil(math.sqrt((len(graphs))))
   numacross = math.ceil(len(graphs)/numdown)
   fig, axes = plt.subplots(
-    nrows=numdown, ncols=numacross, sharex=True, sharey=False, figsize = (20,20)
+    nrows=numdown, ncols=numacross, sharex=True, sharey=False, figsize = (40,20)
   )
   fig.suptitle(graphname)
 
@@ -84,8 +85,8 @@ def plot_cdfs_by_propertytype_locations(place,names,conn):
   plot_graphs_subplots(allprices,propertytypes,"Fraction of houses sold for less than that price","Price £", "CDF of prices by property type", names)
 
 
-def plot_cdfs_by_propertytype():
-  propertytypes = get_unique_values_of_column_from_table("property_type","prices_coordinates_data")
+def plot_cdfs_by_propertytype(conn):
+  propertytypes = get_unique_values_of_column_from_table("property_type","prices_coordinates_data",conn)
   allprices = [get_prices_by_property_type(t) for t in propertytypes]
   plotlines_together_and_seperately(allprices,"Number of houses sold less than that price","Price £", "CDF of prices by property type", propertytypes)
 
