@@ -49,14 +49,14 @@ def plotlines_together_and_seperately(lines,x_label,y_label,graphname, labels):
   for ax in axes.flat:
       ax.label_outer()
 
-  #plt.figure(figsize=(40,20))
+  plt.figure(figsize=(40,20))
   plt.show()
 
 def plot_graphs_subplots(graphs,linelabels,x_label,y_label,graphname, labels):
   numdown = math.ceil(math.sqrt((len(graphs))))
   numacross = math.ceil(len(graphs)/numdown)
   fig, axes = plt.subplots(
-    nrows=numdown, ncols=numacross, sharex=True, sharey=False, figsize = (40,20)
+    nrows=numdown, ncols=numacross, sharex=True, sharey=False, figsize = plot.big_figsize
   )
   fig.suptitle(graphname)
 
@@ -87,7 +87,7 @@ def plot_cdfs_by_propertytype_locations(place,names,conn):
 
 def plot_cdfs_by_propertytype(conn):
   propertytypes = get_unique_values_of_column_from_table("property_type","prices_coordinates_data",conn)
-  allprices = [get_prices_by_property_type(t) for t in propertytypes]
+  allprices = [get_prices_by_property_type(t,conn) for t in propertytypes]
   plotlines_together_and_seperately(allprices,"Number of houses sold less than that price","Price £", "CDF of prices by property type", propertytypes)
 
 def fetch_uk_counties_geojson():
@@ -191,6 +191,136 @@ def plot_map(lat,lon,radius,ax):
 
 def plot_pois_around_point(latitude,longitude,radius,tags):
   pois = (get_points_of_interest(float(latitude),float(longitude),radius,tags))
-  fix,ax = pplt.subplots(figsize=plot.big_figsize)
+  fix,ax = plt.subplots(figsize=plot.big_figsize)
   plot_map(float(latitude),float(longitude),radius,ax)
   plot_pois(pois, ax)
+
+def plot_houses(houses,ax,fig):
+    # plotting
+  markeroptions = {'F':'o','T':'^','S':'s','D':'D','O':'*'}
+  housetypes = houses['property_type'].unique()
+  ax.title("Houses sold in area")
+
+  min,max = houses['price'].min(), houses['price'].max()
+  for t in housetypes:
+    y = houses[houses['property_type']==t]['lattitude']
+    # get the cdf values of y
+    x = houses[houses['property_type']==t]['longitude']#[:-20]
+    z = houses[houses['property_type']==t]['price']
+
+    points = pd.DataFrame(x,y)
+    geometry=gpd.points_from_xy(x, y)
+    points_gdf = gpd.GeoDataFrame(z, 
+                            geometry=geometry)
+    points_gdf.crs = "EPSG:4326"
+    if (t == 'S'):
+      points_gdf.plot('price', ax=ax, marker = markeroptions[t], label=t, c= z,cmap = "Plasma",  vmin = min, vmax = max, legend=True)
+    else:
+      points_gdf.plot('price', ax=ax, marker = markeroptions[t], label=t, c= z,cmap = "Plasma",  vmin = min, vmax = max)
+
+  ax.legend(loc='best')
+
+  plt.figure(figsize=(9, 9))
+  plt.show()
+
+def plot_around_postcode(postcode,radius,conn):
+  loc,rows = select_houses_in_radius_around_postcode(postcode,radius,conn)
+  fig,ax = plt.subplots(figsize=plot.big_figsize)
+  plot_map(loc[0],loc[1],radius,ax)
+  plot_houses(rows,ax,fig)
+
+def plot_pois_houses_around_point(latitude,longitude,radius,conn,tags,fig,ax):
+  rows = select_houses_in_radius_around_point(latitude,longitude,radius,conn)
+  plot_map(float(latitude),float(longitude),radius,ax)
+  pois = (get_points_of_interest(float(latitude),float(longitude),radius,tags))
+  plot_pois(pois, ax)
+  plot_houses(rows,ax,fig)
+  return pois,rows
+
+def plot_pois_houses_around_postcode(postcode,radius,conn,tags):
+  loc = get_lat_long_from_postcode(postcode,conn)
+  latitude,longitude = loc[0],loc[1]
+  fig,ax = plt.subplots(figsize=plot.big_figsize)
+  plot_pois_houses_around_point(latitude,longitude,radius,conn,tags,fig,ax)
+
+def plotscatter_on_ax(pairs, marker, colour, label,ax):
+    # plotting
+    ax.plot(x=pairs[0],y=pairs[1],marker=marker, markersize = 5, label =label, color =  colour)
+    ax.legend()
+
+def plot_price_distance_to_osmnxpoint(latitude,longitude,radius,tags,conn):
+  fig,ax = pplt.subplots(figsize=plot.big_figsize)
+  pois,houses = plot_pois_houses_around_point(latitude,longitude,radius,conn,tags,fig,ax)
+  #avgs = [np.mean(pois[pois.geometry.distance(Point(houses['lattitude'][i],houses['longitude'][i])) < radius]['size']) for i in houses['price'].index]
+  colours = {'F':'r','T':'y','S':'b','D':'g','O':'o'}
+  markeroptions = {'F':'o','T':'^','S':'s','D':'D','O':'*'}
+  housetypes = houses['property_type'].unique()
+  '''for t in housetypes:
+    subset = houses[houses['property_type'] == t]
+    dists = [min(pois.geometry.distance(Point(subset['lattitude'][i],subset['longitude'][i]))) for i in subset['price'].index]
+    pairs = [subset['price'],dists]
+  
+    pairs = pairs[pairs[1]!=np.NaN]
+    print(pairs)
+    plotscatter_on_ax(pairs, markeroptions[t], colours[t], t,axs[0,1])'''
+  
+  latitudes = [x for x in pois.geometry.centroid.y]
+  #latitudes.extend([x for x in pois.geometry.way.centroid.y])
+  longitudes = [x for x in pois.geometry.centroid.x]
+  #longitudes.extend([x for x in pois.geometry.way.centroid.x])
+
+  pois['latitude'] = latitudes
+  pois['longitude'] = longitudes
+  fig2,ax2 = plt.subplots(figsize=plot.big_figsize)
+  colours = {'F':'r','T':'y','S':'b','D':'g','O':'c'}
+  markeroptions = {'F':'o','T':'^','S':'s','D':'D','O':'*'}
+  for i in range(len(houses['price'])):
+    lat,lon = houses['lattitude'][i],houses['longitude'][i]
+    dists = sqrt(pow(abs(pois.latitude - lat),2) + pow(abs(pois.longitude - lon),2))
+    dist = radius
+    if len(dists)>0:
+      dist = min(dists)
+    if ((dist != np.NaN) and (dist > 0)):
+      ax2.scatter(x=dist,y=houses['price'][i],marker =markeroptions[houses['property_type'][i]], color = colours[houses['property_type'][i]])
+
+  plt.show()
+
+
+def get_houses_sizes(latitude,longitude,radius,conn,tag="building",keys= ['residential','semidetached_house','apartments','house','detached','terrace']):
+  houses = select_houses_in_radius_around_point(latitude,longitude,radius,conn)
+  tags = {tag: True}
+  pois = ox.geometries_from_bbox(latitude+radius, latitude-radius, longitude+radius, longitude-radius, tags)
+  pois = (pois[pois.building.isin(keys)])
+  #print(pois[pois['house']=='terraced'])
+  
+  pois.geometry.crs = "EPSG:4326"
+  pois['size'] = pois.geometry.area
+
+
+
+  latitudes = [x for x in pois.geometry.node.y]
+  latitudes.extend([x for x in pois.geometry.way.centroid.y])
+  longitudes = [x for x in pois.geometry.node.x]
+  longitudes.extend([x for x in pois.geometry.way.centroid.x])
+
+  pois['latitude'] = latitudes
+  pois['longitude'] = longitudes
+  return houses,pois
+
+def plot_price_to_sizeIn_radius(latitude,longitude,radius,conn):
+  houses,pois = get_houses_sizes(latitude,longitude,radius,conn)
+  fig,ax = plt.subplots(figsize=plot.big_figsize)
+  plot_map(latitude,longitude,radius,ax)
+  pois.plot(ax=ax, color="blue", alpha=0.7, markersize=10)
+  plot_houses(houses,ax,fig)
+  markeroptions = {'F':'o','T':'^','S':'s','D':'D','O':'*'}
+  colours = {'F':'r','T':'b','S':'y','D':'p','O':'g'}
+  fig,ax = plt.subplots(figsize=plot.big_figsize)
+  for i in range(len(houses['price'])):
+    lat,lon = houses['lattitude'][i],houses['longitude'][i]
+    #print(pois)
+    #print(pois[sqrt(pow(abs(pois.latitude - lat),2) + pow(abs(pois.longitude - lon),2))<radius])
+    close_pois_avg = np.mean(pois[sqrt(pow(abs(pois.latitude - lat),2) + pow(abs(pois.longitude - lon),2)) < radius ]['size'])
+    #print( max(close_pois_avg,0),houses['price'][i])
+    if (close_pois_avg != np.NaN and close_pois_avg < radius):
+      ax.scatter(x = max(close_pois_avg,0), y = houses['price'][i], marker =markeroptions[houses['property_type'][i]], color = colours[houses['property_type'][i]])

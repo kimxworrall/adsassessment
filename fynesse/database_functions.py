@@ -86,3 +86,11 @@ def select_houses_in_radius_around_postcode(postcode,radius,conn):
   loc = cur.fetchall()[0]
   rows = pd.read_sql(f"SELECT price, property_type, lattitude, longitude FROM prices_coordinates_data WHERE lattitude < {radius+float(loc[0])} AND lattitude > {-radius+float(loc[0])} AND longitude < {radius+float(loc[1])} AND longitude > {-radius+float(loc[1])};",con = conn)
   return (loc,rows)
+
+
+
+def select_houses_in_radius_around_point(latitude,longitude,radius,conn):
+  cur = conn.cursor()
+  rows = pd.read_sql(f"SELECT price, property_type, lattitude, longitude FROM prices_coordinates_data WHERE lattitude < {radius+float(latitude)} AND lattitude > {-radius+float(latitude)} AND longitude < {radius+float(longitude)} AND longitude > {-radius+float(longitude)};",con = conn)
+  return rows
+
