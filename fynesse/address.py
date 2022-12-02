@@ -17,22 +17,26 @@ import shapely
 import math
 from geopandas import GeoSeries
 import numpy as np
+import pandas as pd
 from .input_validation import *
 """Address a particular question that arises from the data"""
 
 def validate_inputs(latitude, longitude, date, property_type,conn):
+  #Check that the given inputs are valid and return any warnings associated with them
   if check_coordinates_valid(latitude, longitude,conn):
      validate_date(date)
      return validate_property_type(property_type)
 
 def select_year_range(year):
+  #Select the two year range of the year, and the year before it (where possible)
   if year < 1999:
-    return (1995,19986)
+    return (1995,1996)
   if year > 2022:
     return (2021,2022)
   return(year,year-1)
 
 def get_training_pricesdata(latitude,longitude,date,radius,conn):
+  #Join the postcode data and the paid price data for transactions that are in the date range, and in the bounding box
   date_range = select_year_range(date)
   cur = conn.cursor()
    
@@ -51,12 +55,13 @@ def get_training_pricesdata(latitude,longitude,date,radius,conn):
   return rows
 
 def validate_training_data(data):
+  #Given a dataframe of prices data, remove datapoints where the price might be anomalous, and look at how many datapoints there are, if we dont have many, let the user know
   df = clean_prices_dataframe(data)
-  print(len(df['price']))
   if len(df['price'])<100:
-    print("Not many houses were sold in this area, this data might not be very accurate")
+    print("Not many houses were sold in this area, we only found "+str(len(df['price'])) +", this data might not be very accurate")
   if len(df['price']) == 0:
     print("We've found no houses near here, checking osmnx data")
+  
   return df
 
 def get_avg_prices_in_radius_df(df,radius):

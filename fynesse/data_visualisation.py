@@ -199,7 +199,7 @@ def plot_houses(houses,ax,fig):
     # plotting
   markeroptions = {'F':'o','T':'^','S':'s','D':'D','O':'*'}
   housetypes = houses['property_type'].unique()
-  ax.title("Houses sold in area")
+  ax.title.set_text("Houses sold in area")
 
   min,max = houses['price'].min(), houses['price'].max()
   for t in housetypes:
