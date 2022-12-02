@@ -50,7 +50,7 @@ def get_prices_by_property_type(type,conn):
     rows = cur.fetchall()
     return [i[0] for i in rows]
 
-def get_unique_values_of_column_from_table(column,table):
+def get_unique_values_of_column_from_table(column,table,conn):
     rows = pd.read_sql(f"SELECT DISTINCT {column} FROM {table};",con = conn)
     return list(rows[column])
 
@@ -79,3 +79,10 @@ def get_prices_by_property_type_location(type,place,c,conn):
     cur.execute(f"SELECT price FROM prices_coordinates_data WHERE property_type = '{type}' AND {place} = '{c}' ;")
     rows = cur.fetchall()
     return [i[0] for i in rows]
+
+def select_houses_in_radius_around_postcode(postcode,radius,conn):
+  cur = conn.cursor()
+  cur.execute(f"SELECT lattitude, longitude FROM postcode_data WHERE postcode = '{postcode}';")
+  loc = cur.fetchall()[0]
+  rows = pd.read_sql(f"SELECT price, property_type, lattitude, longitude FROM prices_coordinates_data WHERE lattitude < {radius+float(loc[0])} AND lattitude > {-radius+float(loc[0])} AND longitude < {radius+float(loc[1])} AND longitude > {-radius+float(loc[1])};",con = conn)
+  return (loc,rows)
