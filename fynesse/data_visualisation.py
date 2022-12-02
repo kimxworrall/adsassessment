@@ -51,6 +51,39 @@ def plotlines_together_and_seperately(lines,x_label,y_label,graphname, labels):
   #plt.figure(figsize=(40,20))
   plt.show()
 
+def plot_graphs_subplots(graphs,linelabels,x_label,y_label,graphname, labels):
+  numdown = math.ceil(math.sqrt((len(graphs))))
+  numacross = math.ceil(len(graphs)/numdown)
+  fig, axes = plt.subplots(
+    nrows=numdown, ncols=numacross, sharex=True, sharey=False, figsize = (20,20)
+  )
+  fig.suptitle(graphname)
+
+  for l in range(len(graphs)):
+    ax = axes[math.floor((l)/numacross),((l)%numacross)]
+    plotlines_on_ax(graphs[l], linelabels,ax)
+    ax.title.set_text(labels[l])
+
+  for ax in axes.flat:
+    ax.set(xlabel=x_label, ylabel=y_label)
+  plt.show()
+
+def plotlines_on_ax(lines, labels,ax):
+    # plotting
+    for l in range(len(lines)):
+      y = np.sort(lines[l])
+      # get the cdf values of y
+      x = np.arange(len(lines[l])) / float(len(lines[l]))
+      ax.plot(x,y,marker='o', markersize = 5, label =labels[l])
+    ax.legend()
+
+def plot_cdfs_by_propertytype_locations(place,names):
+  propertytypes = get_unique_values_of_column_from_table("property_type","prices_coordinates_data")
+  allprices = [[get_prices_by_property_type_location(t,place,n) for t in propertytypes] for n in names]
+  print(len(allprices))
+  plot_graphs_subplots(allprices,propertytypes,"Fraction of houses sold for less than that price","Price £", "CDF of prices by property type", names)
+
+
 def plot_cdfs_by_propertytype():
   propertytypes = get_unique_values_of_column_from_table("property_type","prices_coordinates_data")
   allprices = [get_prices_by_property_type(t) for t in propertytypes]
@@ -109,7 +142,7 @@ def filter_and_plotdistricts(dataframe,groupby, column=None, item="all"):
         plot_district_withdata((dict(zip(dataframe["district"],dataframe[column]))))
     plot_district_withdata((dict(zip(dataframe[dataframe[groupby]==item]["district"],dataframe[dataframe[groupby]==item][column]))))
 
-def plot_counties_features_groupby(year, groupby,features= ['AVG(price) as average_price', 'COUNT(db_id) as num_sold', 'MAX(price) as Maxprice', 'MIN(price) as Minprice', 'MAX(price) - MIN(price) as pricerange'], conn=conn):
+def plot_counties_features_groupby(year, groupby,conn,features= ['AVG(price) as average_price', 'COUNT(db_id) as num_sold', 'MAX(price) as Maxprice', 'MIN(price) as Minprice', 'MAX(price) - MIN(price) as pricerange']):
   #print(get_keys(conn,'pp_data'))
   data_interact = get_features_by_property_type_by_district(features, year, groupby,conn)
   
